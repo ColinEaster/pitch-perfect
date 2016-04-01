@@ -9,6 +9,24 @@
 import UIKit
 import AVFoundation
 
+// extension for a transparent navigation bar
+extension UINavigationController {
+    
+    public func presentTransparentNavigationBar() {
+        navigationBar.setBackgroundImage(UIImage(), forBarMetrics:UIBarMetrics.Default)
+        navigationBar.translucent = true
+        navigationBar.shadowImage = UIImage()
+        setNavigationBarHidden(false, animated:true)
+    }
+    
+    public func hideTransparentNavigationBar() {
+        setNavigationBarHidden(true, animated:false)
+        navigationBar.setBackgroundImage(UINavigationBar.appearance().backgroundImageForBarMetrics(UIBarMetrics.Default), forBarMetrics:UIBarMetrics.Default)
+        navigationBar.translucent = UINavigationBar.appearance().translucent
+        navigationBar.shadowImage = UINavigationBar.appearance().shadowImage
+    }
+}
+
 class RecordAudioViewController: UIViewController, AVAudioRecorderDelegate {
     
     var audioRecorder: AVAudioRecorder!
@@ -34,6 +52,8 @@ class RecordAudioViewController: UIViewController, AVAudioRecorderDelegate {
     }
     
     override func viewWillAppear(animated: Bool) {
+        self.navigationController?.hideTransparentNavigationBar()
+        
         stopButton.hidden = true
         recordButton.enabled = true
     }
@@ -50,26 +70,37 @@ class RecordAudioViewController: UIViewController, AVAudioRecorderDelegate {
             
     
         // start recording
-        let dirPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] as! String
+        let dirPath = NSSearchPathForDirectoriesInDomains(.DocumentDirectory, .UserDomainMask, true)[0] 
         
         let currentDateTime = NSDate()
         let formatter = NSDateFormatter()
         formatter.dateFormat = "ddMMyyyy-HHmmss"
-        let recordingName = formatter.stringFromDate(currentDateTime)+".wav"
+        let recordingName = formatter.stringFromDate(currentDateTime) + ".wav"
         let pathArray = [dirPath, recordingName]
         let filePath = NSURL.fileURLWithPathComponents(pathArray)
-        println(filePath)
+        print(filePath)
         
-        var session = AVAudioSession.sharedInstance()
-        session.setCategory(AVAudioSessionCategoryPlayAndRecord, error: nil)
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(AVAudioSessionCategoryPlayAndRecord)
+        } catch _ {
+        }
         
-        audioRecorder = AVAudioRecorder(URL: filePath, settings: nil, error: nil)
+        do {
+        try audioRecorder = AVAudioRecorder(URL: filePath!, settings: [:])
+            
+        
         audioRecorder.delegate = self
         audioRecorder.meteringEnabled = true
         audioRecorder.prepareToRecord()
         audioRecorder.record()
+        }
+        catch _ {
+            
+        }
+        
     }
-    func audioRecorderDidFinishRecording(recorder: AVAudioRecorder!, successfully flag: Bool) {
+    func audioRecorderDidFinishRecording(recorder: AVAudioRecorder, successfully flag: Bool) {
         
         if(flag){
         // save recording
@@ -80,7 +111,7 @@ class RecordAudioViewController: UIViewController, AVAudioRecorderDelegate {
         // TODO: Segue to next screen
         self.performSegueWithIdentifier("stopRecording", sender: recordedAudio)
         }else{
-            println("Didn't record successfully.")
+            print("Didn't record successfully.")
             recordButton.enabled = true
             stopButton.hidden = true
         }
@@ -98,8 +129,11 @@ class RecordAudioViewController: UIViewController, AVAudioRecorderDelegate {
         recordingTextLabel.hidden = true
         
         audioRecorder.stop()
-        var audioSession = AVAudioSession.sharedInstance()
-        audioSession.setActive(false, error: nil)
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setActive(false)
+        } catch _ {
+        }
     }
 }
 

@@ -19,6 +19,7 @@ class PlaySoundsViewController: UIViewController {
     @IBOutlet weak var stopButton: UIButton!
     
     override func viewWillAppear(animated: Bool) {
+        self.navigationController?.presentTransparentNavigationBar()
         //stopButton.hidden = true
     }
     override func viewDidLoad() {
@@ -27,8 +28,8 @@ class PlaySoundsViewController: UIViewController {
         // Do any additional setup after loading the view.
         
         audioEngine = AVAudioEngine()
-        audioFile = AVAudioFile(forReading: receivedAudio.filePathURL, error: nil)
-        audioPlayer = AVAudioPlayer(contentsOfURL: receivedAudio.filePathURL, error: nil)
+        audioFile = try? AVAudioFile(forReading: receivedAudio.filePathURL)
+        audioPlayer = try? AVAudioPlayer(contentsOfURL: receivedAudio.filePathURL)
         audioPlayer.enableRate = true
     }
 
@@ -72,8 +73,8 @@ class PlaySoundsViewController: UIViewController {
         audioEngine.stop()
         audioEngine.reset()
         
-        var pitchPlayer = AVAudioPlayerNode()
-        var timePitch = AVAudioUnitTimePitch()
+        let pitchPlayer = AVAudioPlayerNode()
+        let timePitch = AVAudioUnitTimePitch()
         timePitch.pitch = pitch
         
         audioEngine.attachNode(pitchPlayer)
@@ -84,7 +85,10 @@ class PlaySoundsViewController: UIViewController {
         
         pitchPlayer.scheduleFile(audioFile, atTime: nil, completionHandler: nil)
         
-        audioEngine.startAndReturnError(nil)
+        do {
+            try audioEngine.start()
+        } catch _ {
+        }
         
         pitchPlayer.play()
 
